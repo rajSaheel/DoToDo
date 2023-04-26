@@ -4,8 +4,18 @@ import axios from "axios"
 
 export default function App() {
 
+  const generateId = () => {
+    const list = "ABCDEFJHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz"
+    let str = ""
+    for (let i = 0; i < 10; i++) {
+      const p = Math.floor(Math.random() * list.length)
+      str += list.charAt(p)
+    }
+    return str
+  }
+
   const [list, setList] = useState(null)
-  const [newTodo, setNewTodo] = useState("")
+  const [newTodoInput, setNewTodoInput] = useState("")
 
   const dragItem = useRef();
   const dragOverItem = useRef();
@@ -18,16 +28,14 @@ export default function App() {
     dragOverItem.current = position;
   };
 
-  const drop = (e) => {
+  const drop = () => {
     const copyListItems = [...list];
     const dragItemContent = copyListItems[dragItem.current];
     copyListItems.splice(dragItem.current, 1);
     copyListItems.splice(dragOverItem.current, 0, dragItemContent);
     dragItem.current = null;
     dragOverItem.current = null;
-    setList(copyListItems)
     rearrangeTodos(copyListItems)
-
   };
 
   const fetchTodos = async () => {
@@ -37,25 +45,26 @@ export default function App() {
 
   const addTodo = async (task) => {
     if (task) {
-      setNewTodo("")
-      setList([...list, { rank: list.length + 1, task }])
-      const newId = await axios.post("https://dotodo-back.saheelraj.repl.co/todos/add", { task })
+      setNewTodoInput("")
+      const newTodo = { _id: generateId(), rank: list.length + 1, task }
+      setList([...list, newTodo])
+      await axios.post("https://dotodo-back.saheelraj.repl.co/todos/add", newTodo)
     } else alert("Todo is empty. Try again")
   }
 
   const deleteTodo = async (ind) => {
     const item = list[ind]
     const newList = list.filter((item, index) => { if (index != ind) return item })
-    setList(newList)
     rearrangeTodos(newList)
     await axios.delete(`https://dotodo-back.saheelraj.repl.co/todos/delete/${item._id}`)
   }
 
   const rearrangeTodos = async (l) => {
+    console.log(list)
     for (let i = 0; i < l.length; i++) {
       l[i].rank = i + 1
     }
-
+    setList(l)
     for (let i = 0; i < l.length; i++) {
       await axios.put(`https://dotodo-back.saheelraj.repl.co/todos/${l[i]._id}`, { rank: l[i].rank })
     }
@@ -70,9 +79,9 @@ export default function App() {
     <main>
       <div className={"add-todo"}>
         <h1>{"Do-Todo App"}</h1>
-        <textarea placeholder={"Add new task here"} type="text" name="input" onChange={(e) => setNewTodo(e.target.value)} value={newTodo} cols="50" rows="5" /><br />
+        <textarea placeholder={"Add new task here"} type="text" name="input" onChange={(e) => setNewTodoInput(e.target.value)} value={newTodoInput} cols="50" rows="5" /><br />
         <button id="add-btn" onClick={(e) => {
-          addTodo(newTodo)
+          addTodo(newTodoInput)
         }}>Add</button>
       </div>
       <div id="line"></div>
